@@ -1,0 +1,12 @@
+environment_name = "prod"
+service_name = "tf-front"
+path = "/tf-front"
+priority = "80"
+desired_count = "2"
+container_name = "simple-server"
+container_port = "80"
+container_command = [ "node","server","-s tf-front" ]
+log_group_name = "/ecs/lab-terraform/tf-front"
+ecr_repo_name = "lab-terraform/simple-server"
+ecr_image_tag = "latest"
+namespace_id = ""

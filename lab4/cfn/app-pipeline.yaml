@@ -1,0 +1,287 @@
+Description: Application code pipeline that builds and deploys a docker image to an ECR repo.
+
+Parameters:
+  SourceRepoName:
+    Type: String
+  ImageRepoName:
+    Type: String
+  SourceRepoBranch:
+    Type: String
+    Default: master
+
+
+Outputs:
+  SourceRepoCloneUrlHttp:
+    Value: !GetAtt CodeCommitRepository.CloneUrlHttp
+  ImageRepoUrl:
+    Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ImageRepoName}
+  ImageRepoArn:
+    Value: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ImageRepoName}"
+  PipelineUrl:
+    Value: !Sub https://console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/${Pipeline}
+  ArtifactBucket:
+    Value: !Ref ArtifactBucket
+
+Resources:
+
+# Code Commit repo
+
+  CodeCommitRepository:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryName: !Ref SourceRepoName
+    DeletionPolicy: Delete
+
+# Event rule to trigger pipeline
+
+  TriggerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [events.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: !Sub start-pipeline-execution-${AWS::Region}-${SourceRepoName}
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action: "codepipeline:StartPipelineExecution"
+              Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${Pipeline}
+
+  CodeCommitRepoTrigger:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Trigger the pipeline on change to repo/branch
+      EventPattern:
+        source:
+          - "aws.codecommit"
+        detail-type:
+          - "CodeCommit Repository State Change"
+        resources:
+          - !GetAtt CodeCommitRepository.Arn
+        detail:
+          event:
+            - "referenceCreated"
+            - "referenceUpdated"
+          referenceType:
+            - "branch"
+          referenceName:
+            - !Ref SourceRepoBranch
+      RoleArn: !GetAtt TriggerRole.Arn
+      State: ENABLED
+      Targets: 
+        - Arn: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${Pipeline}
+          Id: !Sub codepipeline-${SourceRepoName}-${SourceRepoBranch}-pipeline
+          RoleArn: !GetAtt TriggerRole.Arn
+
+# ECR Repo
+
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ImageRepoName}"
+    DeletionPolicy: Delete
+
+# Codebuild role
+
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    DeletionPolicy: Delete
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument: |
+        {
+            "Statement": [{
+                "Effect": "Allow",
+                "Principal": { "Service": [ "codebuild.amazonaws.com" ]},
+                "Action": [ "sts:AssumeRole" ]
+            }]
+        }
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - ecr:GetAuthorizationToken
+              - Resource: !Sub arn:aws:s3:::${ArtifactBucket}/*
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetObjectVersion
+              - Resource:
+                - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ImageRepoName}"
+                Effect: Allow
+                Action:
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:PutImage
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+              # to pull down base image like alpine-java8
+              - Resource: !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*
+                Effect: Allow
+                Action:
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:BatchCheckLayerAvailability
+
+# Codepipeline role
+
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    DeletionPolicy: Delete
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument: |
+        {
+            "Statement": [{
+                "Effect": "Allow",
+                "Principal": { "Service": [ "codepipeline.amazonaws.com" ]},
+                "Action": [ "sts:AssumeRole" ]
+            }]
+        }
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource:
+                  - !Sub arn:aws:s3:::${ArtifactBucket}/*
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketVersioning
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                  - cloudformation:*
+                  - iam:PassRole
+                  - codecommit:CancelUploadArchive
+                  - codecommit:GetBranch
+                  - codecommit:GetCommit
+                  - codecommit:GetUploadArchiveStatus
+                  - codecommit:UploadArchive
+
+
+### CodePipeline & Codebuild
+
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+
+  # ref: http://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref.html
+  # CODEBUILD_RESOLVED_SOURCE_VERSION : Commit ID
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    DependsOn: [ CodeBuildServiceRole, CodeCommitRepository, ECRRepository ]
+    Properties:
+      Name: !Sub ${SourceRepoName}-${SourceRepoBranch}-CodeBuild
+      Artifacts:
+        Type: "CODEPIPELINE"
+      Source:
+        Type: "CODEPIPELINE"
+        BuildSpec: |
+            version: 0.2
+            runtime-versions:
+              docker: 18
+            phases:
+              install:
+                runtime-versions:
+                  docker: 18
+              pre_build:
+                commands:
+                  - echo Logging in to Amazon ECR...
+                  - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+                  - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+                  - IMAGE_TAG=${COMMIT_HASH:=latest}   
+                  - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME         
+              build:
+                commands:
+                  - echo Build started on `date`
+                  - echo Building the Docker image...
+                  - docker build -t $REPOSITORY_URI:latest .
+                  - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+              post_build:
+                commands:
+                  - echo Build completed on `date`
+                  - echo Pushing the Docker image...
+                  - docker push $REPOSITORY_URI:latest
+                  - docker push $REPOSITORY_URI:$IMAGE_TAG
+                  - printf '[{"name":”myimage","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+            artifacts:
+                files: imagedefinitions.json            
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL     #BUILD_GENERAL1_LARGE
+        Image: "aws/codebuild/amazonlinux2-x86_64-standard:2.0"
+        Type: "LINUX_CONTAINER"
+        PrivilegedMode: "true"
+        EnvironmentVariables:
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: IMAGE_REPO_NAME
+            Value: !Ref ECRRepository
+      ServiceRole: !Ref CodeBuildServiceRole
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    DependsOn: [ CodePipelineServiceRole, CodeBuildProject ]
+    Properties:
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      RestartExecutionOnUpdate: False
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Name:  !Sub "${SourceRepoName}-${SourceRepoBranch}-Pipeline"
+      # DisableInboundStageTransitions:
+      #   - Reason: "Testing - Do not build when create or update this CFN"
+      #     StageName: "Build"
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeCommit
+              Configuration:
+                RepositoryName: !Ref SourceRepoName
+                BranchName: !Ref SourceRepoBranch
+                PollForSourceChanges: false
+              OutputArtifacts:
+                - Name: SourceOutput
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              RunOrder: 1

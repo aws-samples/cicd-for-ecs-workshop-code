@@ -1,11 +1,8 @@
-## My Project
+# CICD for ECS Workshop Code
 
-TODO: Fill this README out!
-
-Be sure to:
-
-* Change the title in this README
-* Edit your repository description on GitHub
+This project contains a number of code/template samples
+that are designed to be used in conjunction with the
+[CICD for ECS workshop](https://cicd-for-ecs.workshop.aws)
 
 ## Security
 
@@ -13,5 +10,4 @@ See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more inform
 
 ## License
 
-This library is licensed under the MIT-0 License. See the LICENSE file.
-
+This code is licensed under the MIT-0 License. See the LICENSE file.

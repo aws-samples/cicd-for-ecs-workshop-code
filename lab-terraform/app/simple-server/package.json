@@ -1,0 +1,17 @@
+{
+    "name": "simple-server",
+    "version": "1.0.0",
+    "description": "Simple web server that optionally calls another server, and then prepends its output to the response before returning.",
+    "author": "Mike Rizzo <michariz@amazon.co.uk>",
+    "license": "MIT",
+    "main": "server.js",
+    "scripts": {
+      "start": "node server.js"
+    },
+    "dependencies": {
+      "axios": "^0.21.1",
+      "body-parser": "^1.19.0",
+      "express": "^4.17.1",
+      "commander": "^4.1.0"
+    }
+  }

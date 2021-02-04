@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: AWS CloudFormation template to create database resources for PetClinic lab.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+  DBPassword:
+    Description: Required - Password for database
+    Type: String
+  DBUsername:
+    Description: Required - Username of database
+    Type: String
+  DBSSMKey:
+    Description: SSM Key for database params
+    Type: String
+
+Mappings:
+  DBSubnetCidrs:
+    DBSubnet1:
+      cidr: 10.0.128.0/24
+    DBSubnet2:
+      cidr: 10.0.129.0/24
+
+Outputs:
+  JDBCConnectionString:
+    Description: JDBC connection string for database
+    Value: !GetAtt SSMDataSourceURL.Value
+    Export:
+      Name: !Sub ${EnvironmentName}:JDBCConnectionString
+      # Fn::Join:
+      # - ''
+      # - - jdbc:mysql://
+      #   - Fn::GetAtt:
+      #     - PetClinicDB
+      #     - Endpoint.Address
+      #   - ':'
+      #   - Fn::GetAtt:
+      #     - PetClinicDB
+      #     - Endpoint.Port
+      #   - /
+
+  DBUsername:
+    Description: DB user Name
+    Value: !Ref DBUsername
+    Export:
+      Name: !Sub ${EnvironmentName}:DBUsername
+
+  DBPasswordSSMKey:
+    Description: SSM Key for DB password
+    Value: !Sub ${DBSSMKey}/DBPassword
+    Export:
+      Name: !Sub ${EnvironmentName}:DBPasswordSSMKey    
+
+Resources:
+
+# Add subnets for DB
+
+  DBPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      VpcId:
+        Fn::ImportValue: !Sub ${EnvironmentName}:VpcId
+      CidrBlock:
+        Fn::FindInMap:
+        - DBSubnetCidrs
+        - DBSubnet1
+        - cidr
+
+  DBPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      VpcId:
+        Fn::ImportValue: !Sub ${EnvironmentName}:VpcId
+      CidrBlock:
+        Fn::FindInMap:
+        - DBSubnetCidrs
+        - DBSubnet2
+        - cidr
+  
+  PetClinicSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet available for the RDS DB Instance
+      SubnetIds:
+      - Ref: DBPrivateSubnet1
+      - Ref: DBPrivateSubnet2
+
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Open database for access
+      SecurityGroupIngress:
+      - FromPort: '3306'
+        IpProtocol: tcp
+        SourceSecurityGroupId:
+          Fn::ImportValue: !Sub ${EnvironmentName}:ContainerSecurityGroup
+        ToPort: '3306'
+      VpcId:
+        Fn::ImportValue: !Sub ${EnvironmentName}:VpcId
+
+
+  PetClinicDB:
+    Properties:
+      AllocatedStorage: '5'
+      DBInstanceClass: db.t2.medium
+      DBName: PetClinicDB
+      DBSubnetGroupName:
+        Ref: PetClinicSubnetGroup
+      Engine: MySQL
+      MasterUserPassword:
+        Ref: DBPassword
+      MasterUsername:
+        Ref: DBUsername
+      MultiAZ: false
+      VPCSecurityGroups:
+      - Fn::GetAtt:
+        - DBSecurityGroup
+        - GroupId
+    Type: AWS::RDS::DBInstance
+
+  SSMDataSourceURL:
+    Type: "AWS::SSM::Parameter"
+    DependsOn: PetClinicDB
+    Properties: 
+      Name: !Sub ${DBSSMKey}/DataSourceURL
+      Description: MySQL Datasource URL
+      Type: String
+      Value:
+        Fn::Join:
+        - ''
+        - - jdbc:mysql://
+          - Fn::GetAtt:
+            - PetClinicDB
+            - Endpoint.Address
+          - ':'
+          - Fn::GetAtt:
+            - PetClinicDB
+            - Endpoint.Port
+          - /
+          - 'PetClinicDB'
+
+  SSMDBUsername:
+    Type: "AWS::SSM::Parameter"
+    DependsOn: PetClinicDB
+    Properties: 
+      Name: !Sub ${DBSSMKey}/DBUsername
+      Description: MySQL DB Username
+      Type: String
+      Value: !Ref DBUsername

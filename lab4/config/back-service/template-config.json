@@ -1,0 +1,17 @@
+{
+  "Parameters" : {
+    "EnvironmentName" : "prod",
+    "ServiceName" : "back",
+    "DesiredCount" : "2",
+    "ContainerName" : "simple-server",
+    "ContainerPort" : "80",
+    "ContainerCommand" : "node,server,-s back",
+    "LogGroupName" : "/ecs/lab4/back",
+    "ECRRepoName" : "lab4/simple-server",
+    "ECRImageTag" : "latest",
+    "NamespaceId" : ""
+  },
+  "Tags" : {
+    "service" : "back"
+  }
+}

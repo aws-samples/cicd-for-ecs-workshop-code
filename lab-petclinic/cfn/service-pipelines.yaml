@@ -1,0 +1,208 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Deploys pipelines for each of the microservices in the named environment.
+
+Conditions:
+    IsUSEast1:
+        Fn::Equals:
+        - !Ref AWS::Region
+        - "us-east-1"
+
+Parameters:
+      
+    EnvironmentName:
+        Type: String
+    InfraAutomationCfnBucket:
+        Description: S3 bucket containing the cloudformation infrastructure automation code for ECS, cicd and petclinic microservices
+        Type: String
+    CodeBuildContainerSpringBootDocker:
+        Description: Codebuild custom container to run maven build for java, build docker container and push to ECR
+        Type: String
+    SsmKMSKeyArn:
+        Type: String
+        Description: KMS Key for ECS Task to decrypt the DB password stored in SSM
+
+
+Resources:
+
+    # 5 pipelines for
+    # spring-petclinic-rest-owner
+    # spring-petclinic-rest-pet
+    # spring-petclinic-rest-system
+    # spring-petclinic-rest-vet
+    # spring-petclinic-rest-visit
+
+    CodePipelineSystem:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            # TemplateURL: !Sub https://s3-${AWS::Region}.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml
+            TemplateURL:
+              Fn::If: 
+              - IsUSEast1
+              - !Sub "https://s3.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml"
+              - !Sub "https://s3-${AWS::Region}.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml"
+            Parameters:
+                EnvironmentName: !Ref EnvironmentName
+                CodeCommitRepo: "spring-petclinic-rest-system"
+                MicroServiceName: "system"
+                CodeBuildContainerSpringBootDocker: !Ref CodeBuildContainerSpringBootDocker
+                VpcId:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:VpcId
+                ALBListener:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:PublicListener
+                ECSCluster:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:ClusterName
+                CfnTemplateBucket: !Ref InfraAutomationCfnBucket
+                JDBCConnectionString:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:JDBCConnectionString
+                DBUsername:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:DBUsername
+                SsmKMSKeyArn: !Ref SsmKMSKeyArn
+                DBPasswordSSMKey:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:DBPasswordSSMKey
+
+    CodePipelineOwner:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            # TemplateURL: !Sub https://s3-${AWS::Region}.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml
+            TemplateURL:
+              Fn::If: 
+              - IsUSEast1
+              - !Sub "https://s3.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml"
+              - !Sub "https://s3-${AWS::Region}.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml"
+            Parameters:
+                EnvironmentName: !Ref EnvironmentName
+                CodeCommitRepo: "spring-petclinic-rest-owner"
+                MicroServiceName: "owner"
+                CodeBuildContainerSpringBootDocker: !Ref CodeBuildContainerSpringBootDocker
+                VpcId:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:VpcId
+                ALBListener:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:PublicListener
+                ECSCluster:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:ClusterName
+                CfnTemplateBucket: !Ref InfraAutomationCfnBucket
+                JDBCConnectionString:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:JDBCConnectionString
+                DBUsername:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:DBUsername
+                SsmKMSKeyArn: !Ref SsmKMSKeyArn
+                DBPasswordSSMKey:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:DBPasswordSSMKey
+
+    CodePipelinePet:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            # TemplateURL: !Sub https://s3-${AWS::Region}.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml
+            TemplateURL:
+              Fn::If: 
+              - IsUSEast1
+              - !Sub "https://s3.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml"
+              - !Sub "https://s3-${AWS::Region}.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml"
+            Parameters:
+                EnvironmentName: !Ref EnvironmentName
+                CodeCommitRepo: "spring-petclinic-rest-pet"
+                MicroServiceName: "pet"
+                CodeBuildContainerSpringBootDocker: !Ref CodeBuildContainerSpringBootDocker
+                VpcId:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:VpcId
+                ALBListener:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:PublicListener
+                ECSCluster:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:ClusterName
+                CfnTemplateBucket: !Ref InfraAutomationCfnBucket
+                JDBCConnectionString:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:JDBCConnectionString
+                DBUsername:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:DBUsername
+                SsmKMSKeyArn: !Ref SsmKMSKeyArn
+                DBPasswordSSMKey:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:DBPasswordSSMKey
+
+    CodePipelineVet:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            # TemplateURL: !Sub https://s3-${AWS::Region}.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml
+            TemplateURL:
+              Fn::If: 
+              - IsUSEast1
+              - !Sub "https://s3.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml"
+              - !Sub "https://s3-${AWS::Region}.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml"
+            Parameters:
+                EnvironmentName: !Ref EnvironmentName
+                CodeCommitRepo: "spring-petclinic-rest-vet"
+                MicroServiceName: "vet"
+                CodeBuildContainerSpringBootDocker: !Ref CodeBuildContainerSpringBootDocker
+                VpcId:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:VpcId
+                ALBListener:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:PublicListener
+                ECSCluster:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:ClusterName
+                CfnTemplateBucket: !Ref InfraAutomationCfnBucket
+                JDBCConnectionString:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:JDBCConnectionString
+                DBUsername:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:DBUsername
+                SsmKMSKeyArn: !Ref SsmKMSKeyArn
+                DBPasswordSSMKey:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:DBPasswordSSMKey
+
+    CodePipelineVisit:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            # TemplateURL: !Sub https://s3-${AWS::Region}.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml
+            TemplateURL:
+              Fn::If: 
+              - IsUSEast1
+              - !Sub "https://s3.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml"
+              - !Sub "https://s3-${AWS::Region}.amazonaws.com/${InfraAutomationCfnBucket}/service-cicd-pipeline.yaml"
+            Parameters:
+                EnvironmentName: !Ref EnvironmentName
+                CodeCommitRepo: "spring-petclinic-rest-visit"
+                MicroServiceName: "visit"
+                CodeBuildContainerSpringBootDocker: !Ref CodeBuildContainerSpringBootDocker
+                VpcId:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:VpcId
+                ALBListener:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:PublicListener
+                ECSCluster:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:ClusterName
+                CfnTemplateBucket: !Ref InfraAutomationCfnBucket
+                JDBCConnectionString:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:JDBCConnectionString
+                DBUsername:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:DBUsername
+                SsmKMSKeyArn: !Ref SsmKMSKeyArn
+                DBPasswordSSMKey:
+                    Fn::ImportValue:
+                        !Sub ${EnvironmentName}:DBPasswordSSMKey

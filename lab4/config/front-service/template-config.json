@@ -1,0 +1,19 @@
+{
+  "Parameters" : {
+    "EnvironmentName" : "prod",
+    "ServiceName" : "front",
+    "Path" : "/front",
+    "Priority" : "40",
+    "DesiredCount" : "2",
+    "ContainerName" : "simple-server",
+    "ContainerPort" : "80",
+    "ContainerCommand" : "node,server,-s front",
+    "LogGroupName" : "/ecs/lab4/front",
+    "ECRRepoName" : "lab4/simple-server",
+    "ECRImageTag" : "latest",
+    "NamespaceId" : ""
+  },
+  "Tags" : {
+    "service" : "front"
+  }
+}

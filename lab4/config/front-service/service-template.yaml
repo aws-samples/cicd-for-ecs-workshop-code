@@ -1,0 +1,172 @@
+Parameters:  
+  
+  EnvironmentName:
+    Type: String
+  ServiceName:
+    Type: String
+  Path:
+    Type: String
+  Priority:
+    Type: Number
+  DesiredCount:
+    Type: Number
+  ContainerName:
+    Type: String
+  ContainerPort:
+    Type: Number
+  ContainerCommand:
+    Type: CommaDelimitedList
+  LogGroupName:
+    Type: String
+    
+  # ECR Repo name
+  ECRRepoName:
+    Type: String
+  ECRImageTag:
+    Type: String
+
+# Docker cmd
+#  DockerCmd:
+#    Type: String
+
+  # Service discovery
+  NamespaceId:
+    Type: String
+
+Resources:
+
+  CWLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: !Ref LogGroupName
+      RetentionInDays: 7 # [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+  
+  ServiceRegistry:   
+    Type: AWS::ServiceDiscovery::Service
+    Properties: 
+      Description: Front service
+      DnsConfig: 
+        DnsRecords:
+          - TTL: 300
+            Type: A
+        NamespaceId: !Ref NamespaceId
+        RoutingPolicy: WEIGHTED
+      HealthCheckCustomConfig: 
+        FailureThreshold: 1    
+      Name: !Ref ServiceName
+      NamespaceId: !Ref NamespaceId
+
+# Service
+
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: ListenerRule
+    Properties:
+      Cluster:
+        Fn::ImportValue:
+          !Sub ${EnvironmentName}:ClusterName
+      DesiredCount: !Ref DesiredCount
+      TaskDefinition: !Ref TaskDefinition
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - Fn::ImportValue: !Sub ${EnvironmentName}:ContainerSecurityGroup
+          Subnets:
+            - Fn::ImportValue: !Sub ${EnvironmentName}:PrivateSubnetOne
+            - Fn::ImportValue: !Sub  ${EnvironmentName}:PrivateSubnetTwo
+            - Fn::ImportValue: !Sub  ${EnvironmentName}:PrivateSubnetThree
+      LoadBalancers:
+        - ContainerName: !Ref ContainerName
+          ContainerPort: !Ref ContainerPort
+          TargetGroupArn: !Ref TargetGroup
+      ServiceRegistries:
+        - ContainerName: !Ref ContainerName
+          RegistryArn : !GetAtt ServiceRegistry.Arn
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 50
+ 
+
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub ${ServiceName}
+      NetworkMode: awsvpc
+      RequiresCompatibilities: 
+        - EC2
+        - FARGATE  
+      Cpu: 256
+      Memory: 512
+      ExecutionRoleArn: !Ref TaskExecutionRole
+      ContainerDefinitions:
+        - Name: !Ref ContainerName
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepoName}:${ECRImageTag}
+          Command: !Ref ContainerCommand
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Sub ${AWS::Region}
+              awslogs-group: !Ref LogGroupName
+              awslogs-stream-prefix: !Sub ${ECRImageTag}
+          Essential: true
+          PortMappings:
+            - ContainerPort: !Ref ContainerPort
+          Environment:
+            - Name: AWS_Region
+              Value: !Sub ${AWS::Region}
+
+  TargetGroup:
+      Type: AWS::ElasticLoadBalancingV2::TargetGroup
+      Properties:
+          VpcId:
+            Fn::ImportValue:
+              !Sub ${EnvironmentName}:VpcId
+          TargetType: ip
+          Port: 80
+          Protocol: HTTP
+          Matcher: 
+              HttpCode: 200-299
+          HealthCheckIntervalSeconds: 10
+          HealthCheckPath: /ping
+          HealthCheckProtocol: HTTP
+          HealthCheckTimeoutSeconds: 5
+          HealthyThresholdCount: 2
+          
+  ListenerRule:
+      Type: AWS::ElasticLoadBalancingV2::ListenerRule
+      Properties:
+          ListenerArn:
+            Fn::ImportValue:
+              !Sub ${EnvironmentName}:PublicListener
+          Priority: !Ref Priority
+          Conditions:
+              - Field: path-pattern
+                Values: 
+                  - !Ref Path
+          Actions:
+              - TargetGroupArn: !Ref TargetGroup
+                Type: forward
+ 
+
+Outputs:
+  EcsServiceName:
+    Description: ECS Service Name
+    Value: !GetAtt Service.Name
+
+
+
+

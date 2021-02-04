@@ -1,0 +1,18 @@
+{
+    "taskDefinition": "hello-dude-prod:1",
+    "cluster": "prod",
+    "loadBalancers": [
+        {
+            "targetGroupArn": "${PROD_BLUE_TG_ARN}",
+            "containerName": "hello-dude",
+            "containerPort": 80
+        }
+    ],
+    "desiredCount": 3,
+    "launchType": "EC2",
+    "schedulingStrategy": "REPLICA",
+    "deploymentController": {
+        "type": "CODE_DEPLOY"
+    },
+    "healthCheckGracePeriodSeconds": 2
+}
