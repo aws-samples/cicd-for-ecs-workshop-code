@@ -75,7 +75,6 @@ Resources:
           Subnets:
             - Fn::ImportValue: !Sub ${EnvironmentName}:PrivateSubnetOne
             - Fn::ImportValue: !Sub  ${EnvironmentName}:PrivateSubnetTwo
-            - Fn::ImportValue: !Sub  ${EnvironmentName}:PrivateSubnetThree
       LoadBalancers:
         - ContainerName: !Ref ContainerName
           ContainerPort: !Ref ContainerPort
