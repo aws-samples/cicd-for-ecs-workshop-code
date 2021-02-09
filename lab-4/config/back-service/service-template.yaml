@@ -70,7 +70,6 @@ Resources:
           Subnets:
             - Fn::ImportValue: !Sub ${EnvironmentName}:PrivateSubnetOne
             - Fn::ImportValue: !Sub  ${EnvironmentName}:PrivateSubnetTwo
-            - Fn::ImportValue: !Sub  ${EnvironmentName}:PrivateSubnetThree
       ServiceRegistries:
         - ContainerName: !Ref ContainerName
           RegistryArn : !GetAtt ServiceRegistry.Arn
