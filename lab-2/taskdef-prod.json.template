@@ -10,7 +10,7 @@
   "containerDefinitions": [
     {
       "name": "hello-dude",
-      "image": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/lab1/hello-dude",
+      "image": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/hello-dude",
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
