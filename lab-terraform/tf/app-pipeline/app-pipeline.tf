@@ -190,7 +190,7 @@ resource "aws_iam_policy" "codebuild_policy" {
         "ecr:CompleteLayerUpload"
       ],
       "Effect": "Allow",
-      "Resource": aws_ecr_repository.image_repo.arn
+      "Resource": "${aws_ecr_repository.image_repo.arn}"
     },
     {
       "Action": [
