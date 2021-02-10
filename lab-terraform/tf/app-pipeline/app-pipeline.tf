@@ -94,7 +94,7 @@ resource "aws_iam_policy" "trigger_policy" {
         "codepipeline:StartPipelineExecution"
       ],
       "Effect": "Allow",
-      "Resource": aws_codepipeline.pipeline.arn
+      "Resource": "${aws_codepipeline.pipeline.arn}"
     }
   ]
 }
@@ -116,7 +116,7 @@ resource "aws_cloudwatch_event_rule" "trigger_rule" {
   "detail": {
     "event": [ "referenceCreated", "referenceUpdated" ],
     "referenceType": [ "branch" ],
-    "referenceName": [ var.source_repo_branch ]
+    "referenceName": [ "${var.source_repo_branch}" ]
   }
 }
 PATTERN
