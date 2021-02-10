@@ -112,7 +112,7 @@ resource "aws_cloudwatch_event_rule" "trigger_rule" {
 {
   "source": [ "aws.codecommit" ],
   "detail-type": [ "CodeCommit Repository State Change" ],
-  "resources": [ aws_codecommit_repository.source_repo.arn ],
+  "resources": [ "${aws_codecommit_repository.source_repo.arn}" ],
   "detail": {
     "event": [ "referenceCreated", "referenceUpdated" ],
     "referenceType": [ "branch" ],
