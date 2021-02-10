@@ -215,6 +215,7 @@ resource "aws_iam_policy" "codebuild_policy" {
         "servicediscovery:GetService",
         "servicediscovery:UpdateService",
         "servicediscovery:DeleteService",
+        "servicediscovery:ListTagsForResource",
         "cloudwatch:GetDashboard",
         "cloudwatch:PutDashboard",
         "cloudwatch:PutMetricData",
@@ -261,7 +262,7 @@ resource "aws_codebuild_project" "codebuild" {
     }
     environment_variable {
       name = "TF_VERSION"
-      value = "0.12.26"
+      value = "0.14.6"
     }
     
   }
