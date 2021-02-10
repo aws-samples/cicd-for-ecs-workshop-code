@@ -1,6 +1,14 @@
+terraform {
+  required_providers {
+    mycloud = {
+      source  = "hashicorp/aws"
+      version = "~> 3.0"
+    }
+  }
+}
+
 provider "aws" {
   profile = "default"
-  version = "~> 2.64"
 }
 
 data "aws_caller_identity" "current" {}
@@ -27,15 +35,15 @@ variable "image_repo_name" {
 # Outputs
 
 output "source_repo_clone_url_http" {
-  value = "${aws_codecommit_repository.source_repo.clone_url_http}"
+  value = aws_codecommit_repository.source_repo.clone_url_http
 }
 
 output "image_repo_url" {
-  value = "${aws_ecr_repository.image_repo.repository_url}"
+  value = aws_ecr_repository.image_repo.repository_url
 }
 
 output "image_repo_arn" {
-  value = "${aws_ecr_repository.image_repo.arn}"
+  value = aws_ecr_repository.image_repo.arn
 }
 
 output "pipeline_url" {
@@ -86,7 +94,7 @@ resource "aws_iam_policy" "trigger_policy" {
         "codepipeline:StartPipelineExecution"
       ],
       "Effect": "Allow",
-      "Resource": "${aws_codepipeline.pipeline.arn}"
+      "Resource": aws_codepipeline.pipeline.arn
     }
   ]
 }
@@ -104,11 +112,11 @@ resource "aws_cloudwatch_event_rule" "trigger_rule" {
 {
   "source": [ "aws.codecommit" ],
   "detail-type": [ "CodeCommit Repository State Change" ],
-  "resources": [ "${aws_codecommit_repository.source_repo.arn}" ],
+  "resources": [ aws_codecommit_repository.source_repo.arn ],
   "detail": {
     "event": [ "referenceCreated", "referenceUpdated" ],
     "referenceType": [ "branch" ],
-    "referenceName": [ "${var.source_repo_branch}" ]
+    "referenceName": [ var.source_repo_branch ]
   }
 }
 PATTERN
@@ -182,7 +190,7 @@ resource "aws_iam_policy" "codebuild_policy" {
         "ecr:CompleteLayerUpload"
       ],
       "Effect": "Allow",
-      "Resource": "${aws_ecr_repository.image_repo.arn}"
+      "Resource": aws_ecr_repository.image_repo.arn
     },
     {
       "Action": [
@@ -355,8 +363,8 @@ resource "aws_codepipeline" "pipeline" {
       output_artifacts = ["SourceOutput"] 
       run_order = 1
       configuration = {
-        RepositoryName = "${var.source_repo_name}"
-        BranchName = "${var.source_repo_branch}"
+        RepositoryName = var.source_repo_name
+        BranchName = var.source_repo_branch
         PollForSourceChanges = "false"
       }
     }
@@ -374,7 +382,7 @@ resource "aws_codepipeline" "pipeline" {
       output_artifacts = ["BuildOutput"]
       run_order = 1
       configuration = {
-        ProjectName = "${aws_codebuild_project.codebuild.id}"
+        ProjectName = aws_codebuild_project.codebuild.id
       }
     }
   }

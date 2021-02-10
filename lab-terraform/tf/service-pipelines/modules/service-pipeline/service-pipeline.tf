@@ -1,6 +1,14 @@
+terraform {
+  required_providers {
+    mycloud = {
+      source  = "hashicorp/aws"
+      version = "~> 3.0"
+    }
+  }
+}
+
 provider "aws" {
   profile = "default"
-  version = "~> 2.64"
 }
 
 data "aws_caller_identity" "current" {}
