@@ -11,8 +11,8 @@ const program = require('commander');
 program
   .version('1.0.0')
   .requiredOption('-s, --service <name>', 'name of service')
-  .option('-d, --downstream-service <name>', 'name of downstream service to invoke')
-  .option('-e, --downstream-path <path>', 'Http path for downstream service')
+  .option('-u, --upstream-service <name>', 'name of upstream service to invoke')
+  .option('-e, --upstream-path <path>', 'Http path for upstream service')
   .option('-p, --port <port>', 'server port', defaultPort)
   .parse(process.argv);
 
@@ -47,34 +47,38 @@ app.get(servicePath, function(req, res) {
   let timestamp = Date.now();
   res.set('Cache-Control', 'no-cache');
 
-  if (program.downstreamService != undefined) { // Call downstream service
-    console.log("Calling downstream service")
-    const downstreamService = program.downstreamService.trim();
+  if (program.upstreamService != undefined) { // Call upstream service
+    console.log("Calling upstream service")
+    const upstreamService = program.upstreamService.trim();
 
-    const downstreamPath = (program.downstreamPath != undefined)
-      ? program.downstreamPath.trim()
+    const upstreamPath = (program.upstreamPath != undefined)
+      ? program.upstreamPath.trim()
       : '/'
 
-    const downstreamServicePath = 'http://' + downstreamService + downstreamPath
-    console.log(`Downstream service path: ${downstreamServicePath}`)
+    const upstreamServicePath = 'http://' + upstreamService + upstreamPath
+    console.log(`Upstream service path: ${upstreamServicePath}`)
 
     axios.get(
-      downstreamServicePath, { responseType: 'json' }
+      upstreamServicePath, { responseType: 'json' }
     )
     .then(function(response) {
       res.type('json').send(
         format({
 //          "Timestamp" : timestamp,
           "Service" : service,
-          "Downstream" : response.data
+          "Upstream" : response.data
         },pretty)
       );
     })
     .catch(function(error) {
       console.log(JSON.stringify(error));
       console.trace();
-      return Promise.reject(error);
-      //      return console.log(error.toJSON());
+      res.type('json').send(
+        format({
+          "Service" : service,
+          "Upstream error" : error
+        },pretty)
+      );
     })
   }
   else {
