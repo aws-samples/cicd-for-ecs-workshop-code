@@ -21,10 +21,6 @@ data "aws_cloudformation_export" "private_subnet_two" {
   name = "${var.environment_name}:PrivateSubnetTwo"
 }
 
-data "aws_cloudformation_export" "private_subnet_three" {
-  name = "${var.environment_name}:PrivateSubnetThree"
-}
-
 data "aws_cloudformation_export" "public_listener" {
   name = "${var.environment_name}:PublicListener"
 }
@@ -172,8 +168,7 @@ resource "aws_ecs_service" "service" {
     security_groups = [ data.aws_cloudformation_export.container_security_group.value ]
     subnets = [
       data.aws_cloudformation_export.private_subnet_one.value,
-      data.aws_cloudformation_export.private_subnet_two.value,
-      data.aws_cloudformation_export.private_subnet_three.value
+      data.aws_cloudformation_export.private_subnet_two.value
     ]
   }
 
