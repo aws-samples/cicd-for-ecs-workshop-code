@@ -1,0 +1,21 @@
+{
+    "serviceName": "hello-server", 
+    "launchType": "EC2", 
+    "loadBalancers": [
+        {
+            "targetGroupArn": "${STAGING_TARGET_GROUP_ARN}", 
+            "containerName": "hello-server",
+            "containerPort": 80
+        }
+    ], 
+    "desiredCount": 2, 
+    "cluster": "arn:aws:ecs:${AWS_REGION}:${AWS_ACCOUNT_ID}:cluster/staging", 
+    "serviceName": "hello-server", 
+    "deploymentConfiguration": {
+        "maximumPercent": 200, 
+        "minimumHealthyPercent": 50
+    }, 
+    "healthCheckGracePeriodSeconds": 2, 
+    "schedulingStrategy": "REPLICA", 
+    "taskDefinition": "arn:aws:ecs:${AWS_REGION}:${AWS_ACCOUNT_ID}:task-definition/hello-server:1"
+}
