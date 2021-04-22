@@ -94,6 +94,21 @@ Resources:
         MaximumPercent: 200
         MinimumHealthyPercent: 50
 
+
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -104,7 +119,7 @@ Resources:
         - FARGATE  
       Cpu: 256
       Memory: 512
-      ExecutionRoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/Cloud9-ECSTaskExecutionRole
+      ExecutionRoleArn: !Ref TaskExecutionRole
       ContainerDefinitions:
         - Name: !Ref ContainerName
           Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepoName}:${ECRImageTag}
