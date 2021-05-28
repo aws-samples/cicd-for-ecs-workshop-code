@@ -312,8 +312,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Access to the public facing load balancer
-      VpcId:
-        Fn::ImportValue: !Sub ${EnvironmentName}:VpcId
+      VpcId: !Ref VPC
       SecurityGroupIngress:
           # Allow access to ALB from anywhere on the internet
           - CidrIp: 0.0.0.0/0
@@ -330,8 +329,8 @@ Resources:
       Subnets:
         # The load balancer is placed into the public subnets, so that traffic
         # from the internet can reach the load balancer directly via the internet gateway
-        - Fn::ImportValue: !Sub ${EnvironmentName}:PublicSubnetOne
-        - Fn::ImportValue: !Sub ${EnvironmentName}:PublicSubnetTwo
+        - !Ref PublicSubnetOne
+        - !Ref PublicSubnetTwo
       SecurityGroups: [!Ref 'PublicLoadBalancerSG']
 
   # A dummy target group is used to setup the ALB to just drop traffic
@@ -351,8 +350,7 @@ Resources:
       Port: 80
       Protocol: HTTP
       UnhealthyThresholdCount: 10
-      VpcId:
-        Fn::ImportValue: !Sub ${EnvironmentName}:VpcId
+      VpcId: !Ref VPC
       TargetGroupAttributes:
       - Key: deregistration_delay.timeout_seconds
         Value: '5'
