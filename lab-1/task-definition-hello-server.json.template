@@ -1,8 +1,7 @@
 {
   "family": "hello-server",
   "networkMode": "bridge",
-  "cpu": "256",
-  "memory": "512",
+  "memory": "256",
   "requiresCompatibilities": [
     "EC2"
   ],

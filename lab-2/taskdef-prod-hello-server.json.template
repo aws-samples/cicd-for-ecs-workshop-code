@@ -1,8 +1,7 @@
 {
   "family": "hello-server-prod",
   "networkMode": "bridge",
-  "cpu": "256",
-  "memory": "512",
+  "memory": "256",
   "requiresCompatibilities": [
     "EC2"
   ],
@@ -23,7 +22,8 @@
           "containerPort": 80,
           "protocol": "tcp"
         }
-      ]
+      ],
+      "essential": true
     }
   ]
 }

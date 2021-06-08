@@ -14,5 +14,5 @@
     "deploymentController": {
         "type": "CODE_DEPLOY"
     },
-    "healthCheckGracePeriodSeconds": 2
+    "healthCheckGracePeriodSeconds": 8
 }

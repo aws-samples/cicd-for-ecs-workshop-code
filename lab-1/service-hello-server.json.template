@@ -15,7 +15,7 @@
         "maximumPercent": 200, 
         "minimumHealthyPercent": 50
     }, 
-    "healthCheckGracePeriodSeconds": 2, 
+    "healthCheckGracePeriodSeconds": 8, 
     "schedulingStrategy": "REPLICA", 
     "taskDefinition": "arn:aws:ecs:${AWS_REGION}:${AWS_ACCOUNT_ID}:task-definition/hello-server:1"
 }
