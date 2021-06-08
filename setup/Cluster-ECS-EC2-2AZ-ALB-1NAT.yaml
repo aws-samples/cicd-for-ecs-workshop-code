@@ -192,6 +192,9 @@ Resources:
     Properties:
       GroupDescription: Access to the ECS hosts that run containers
       VpcId: !Ref 'VPC'
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          SourceSecurityGroupId: !Ref PublicLoadBalancerSG
 
   ContainerSecurityGroupIngressFromSelf:
     Type: AWS::EC2::SecurityGroupIngress
@@ -307,6 +310,7 @@ Resources:
   # to the public, and is intended to route traffic to one or more public
   # facing services. This is used for accepting traffic from the public
   # internet and directing it to public facing microservices
+
 
   PublicLoadBalancerSG:
     Type: AWS::EC2::SecurityGroup
