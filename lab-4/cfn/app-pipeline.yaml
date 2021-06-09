@@ -199,12 +199,7 @@ Resources:
         Type: "CODEPIPELINE"
         BuildSpec: |
             version: 0.2
-            runtime-versions:
-              docker: 18
             phases:
-              install:
-                runtime-versions:
-                  docker: 18
               pre_build:
                 commands:
                   - echo Logging in to Amazon ECR...

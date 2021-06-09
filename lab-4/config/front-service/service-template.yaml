@@ -144,6 +144,9 @@ Resources:
           HealthCheckProtocol: HTTP
           HealthCheckTimeoutSeconds: 5
           HealthyThresholdCount: 2
+          TargetGroupAttributes:
+            - Key: deregistration_delay.timeout_seconds
+              Value: 5
           
   ListenerRule:
       Type: AWS::ElasticLoadBalancingV2::ListenerRule
