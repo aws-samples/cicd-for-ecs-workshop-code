@@ -1,4 +1,4 @@
-FROM node:buster-slim
+FROM public.ecr.aws/docker/library/node:buster-slim
 WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm install
