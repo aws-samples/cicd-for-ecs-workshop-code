@@ -9,7 +9,7 @@ Parameters:
   InstanceType:
     Description: EC2 instance type
     Type: String
-    Default: t2.micro
+    Default: t3.micro
     Description: Class of EC2 instance used to host containers. Choose t3 for testing, m5 for general purpose, c5 for CPU intensive services, and r5 for memory intensive services
     AllowedValues: [ t2.micro, t3.micro, t3.small, t3.medium, t3.large, t3.xlarge, t3.2xlarge,
      m5.large, m5.xlarge, m5.2large, m5.4xlarge, m5.12xlarge, m5.24large,
