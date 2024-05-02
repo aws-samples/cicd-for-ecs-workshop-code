@@ -166,12 +166,12 @@ Resources:
       RouteTableId: !Ref PrivateRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref NatGatewayOne
-  PrivateSubnetOneRouteTableAssociation:
+  PrivateSubnetOneRouteTableAssoc:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PrivateRouteTable
       SubnetId: !Ref PrivateSubnetOne
-  PrivateSubnetTwoRouteTableAssociation:
+  PrivateSubnetTwoRouteTableAssoc:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PrivateRouteTable
@@ -208,6 +208,10 @@ Resources:
   # themselves as members of the cluster, and run the docker containers.
   ECSAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
+    DependsOn:
+      - PrivateRoute
+      - PrivateSubnetOneRouteTableAssoc
+      - PrivateSubnetTwoRouteTableAssoc
     Properties:
       VPCZoneIdentifier:
         - !Ref PrivateSubnetOne
